@@ -107,108 +107,90 @@ Shader "GerstnerWaves"
 				float3 positionWS : TEXCOORD0;
 			};
 
+			struct Param
+			{
+				float Q;
+				float A;
+				float WA;
+				float sinTheta;
+				float cosTheta;
+				float2 D;
+			};
+
+			void InitParam(const float2 xy, const half QRatio, const half A, const float2 D, const float t, const float L, const float S, out Param param)
+			{
+				const float w = 2 * PI / L;
+				param.Q = (1 / (w * A)) * QRatio;
+				param.A = A;
+				param.WA = w * A;
+				param.D = normalize(D);
+
+				const float phi = S * w;
+				const float theta = w * dot(param.D, xy) + phi * t;
+				param.sinTheta = sin(theta);
+				param.cosTheta = cos(theta);
+			}
+
 			/// <summary>
 			/// 位置ずれ
 			/// </summary>
-			/// <param name="xy"> 元の座標 </param>
-			/// <param name="QRatio"> Qの割合0~1 </param>
-			/// <param name="A"> Amplitude </param>
-			/// <param name="D"> Direction </param>
-			/// <param name="t"> Time </param>
-			/// <param name="L"> WaveLength </param>
-			/// <param name="S"> Speed </param>
-			float3 ShiftPosition(const float2 xy, const half QRatio, const half A, const half2 D, const float t, const float L, const float S)
+			float3 CalculateSumTermOfShiftPosition(const in Param param)
 			{
-				const float w = 2 * PI / L;
-				const float phi = S * w;
-				const float Q = (1 / (w * A)) * QRatio;
-				const float theta = w * dot(D, xy) + phi * t;
 				return float3(
-					Q * A * D.x * cos(theta),
-					Q * A * D.y * cos(theta),
-					A * sin(theta)
+					param.Q * param.A * param.D.x * param.cosTheta,
+					param.Q * param.A * param.D.y * param.cosTheta,
+					param.A * param.sinTheta
 				);
 			}
 
-			float3 CalculateSumTermOfNormal(const float2 xy, const half QRatio, const half A, const half2 D, const float t, const float L, const float S)
+			float3 CalculateSumTermOfNormal(const in Param param)
 			{
-				const float w = 2 * PI / L;
-				const float WA = w * A;
-				const float phi = S * w;
-				const float theta = w * dot(D, xy) + phi * t;
-				const float sinTheta = sin(theta);
-				const float cosTheta = cos(theta);
-				const float Q = (1 / (w * A)) * QRatio;
 				return float3(
-					D.x * WA * cosTheta,
-					D.y * WA * cosTheta,
-					Q * WA * sinTheta
+					param.D.x * param.WA * param.cosTheta,
+					param.D.y * param.WA * param.cosTheta,
+					param.Q * param.WA * param.sinTheta
 				);
 			}
 
-			float3 CalculateSumTermOfBitangent(const float2 xy, const half QRatio, const half A, const half2 D, const float t, const float L, const float S)
+			float3 CalculateSumTermOfBitangent(const in Param param)
 			{
-				const float w = 2 * PI / L;
-				const float WA = w * A;
-				const float phi = S * w;
-				const float theta = w * dot(D, xy) + phi * t;
-				const float sinTheta = sin(theta);
-				const float cosTheta = cos(theta);
-				const float Q = (1 / (w * A)) * QRatio;
 				return float3(
-					Q * D.x * D.x * WA * sinTheta,
-					Q * D.x * D.y * WA * sinTheta,
-					D.x * WA * cosTheta
+					param.Q * param.D.x * param.D.x * param.WA * param.sinTheta,
+					param.Q * param.D.x * param.D.y * param.WA * param.sinTheta,
+					param.D.x * param.WA * param.cosTheta
 				);
 			}
 
-			float3 CalculateSumTermOfTangent(const float2 xy, const half QRatio, const half A, const half2 D, const float t, const float L, const float S)
+			float3 CalculateSumTermOfTangent(const in Param param)
 			{
-				const float w = 2 * PI / L;
-				const float WA = w * A;
-				const float phi = S * w;
-				const float theta = w * dot(D, xy) + phi * t;
-				const float sinTheta = sin(theta);
-				const float cosTheta = cos(theta);
-				const float Q = (1 / (w * A)) * QRatio;
 				return float3(
-					Q * D.x * D.y * WA * sinTheta,
-					Q * D.y * D.y * WA * sinTheta,
-					D.y * WA * cosTheta
+					param.Q * param.D.x * param.D.y * param.WA * param.sinTheta,
+					param.Q * param.D.y * param.D.y * param.WA * param.sinTheta,
+					param.D.y * param.WA * param.cosTheta
 				);
 			}
 
-			float3 P(float2 xy, float t)
+			float3 P(in float2 xy, const in Param param1, const in Param param2, const in Param param3)
 			{
 				return float3(xy, 0)
-					+ ShiftPosition(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1
-					+ ShiftPosition(xy, _QRatio2, _Amplitude2, normalize(float2(_Direction2X, _Direction2Z)), t, _WaveLength2, _Speed2) * _Active2
-					+ ShiftPosition(xy, _QRatio3, _Amplitude3, normalize(float2(_Direction3X, _Direction3Z)), t, _WaveLength3, _Speed3) * _Active3;
+					+ CalculateSumTermOfShiftPosition(param1) * _Active1
+					+ CalculateSumTermOfShiftPosition(param2) * _Active2
+					+ CalculateSumTermOfShiftPosition(param3) * _Active3;
 			}
 
-			float3 N(float2 xy, float t)
+			float3 N(const in Param param1, const in Param param2, const in Param param3)
 			{
-				// tangentとbitangentを計算して外積でnormalを計算したほうが綺麗に出るので、直接normalを計算しない
-				/*const float3 normalTerm1 = CalculateSumTermOfNormal(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1;
-				const float3 normalTerm2 = CalculateSumTermOfNormal(xy, _QRatio2, _Amplitude2, normalize(float2(_Direction2X, _Direction2Z)), t, _WaveLength2, _Speed2) * _Active2;
-				const float3 normalTerm3 = CalculateSumTermOfNormal(xy, _QRatio3, _Amplitude3, normalize(float2(_Direction3X, _Direction3Z)), t, _WaveLength3, _Speed3) * _Active3;
-				return normalize(float3(
-					- (normalTerm1.x + normalTerm2.x + normalTerm3.x),
-					- (normalTerm1.y + normalTerm2.y + normalTerm3.y),
-					1 - (normalTerm1.z + normalTerm2.z + normalTerm3.z)
-				));*/
-
-				const float3 bitangentTerm1 = CalculateSumTermOfBitangent(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1;
-				const float3 bitangentTerm2 = CalculateSumTermOfBitangent(xy, _QRatio2, _Amplitude2, normalize(float2(_Direction2X, _Direction2Z)), t, _WaveLength2, _Speed2) * _Active2;
-				const float3 bitangentTerm3 = CalculateSumTermOfBitangent(xy, _QRatio3, _Amplitude3, normalize(float2(_Direction3X, _Direction3Z)), t, _WaveLength3, _Speed3) * _Active3;
+				const float3 bitangentTerm1 = CalculateSumTermOfBitangent(param1) * _Active1;
+				const float3 bitangentTerm2 = CalculateSumTermOfBitangent(param2) * _Active2;
+				const float3 bitangentTerm3 = CalculateSumTermOfBitangent(param3) * _Active3;
 				const float3 bitangent = normalize(float3(
 					1 - (bitangentTerm1.x + bitangentTerm2.x + bitangentTerm3.x),
 					- (bitangentTerm1.y + bitangentTerm2.y + bitangentTerm3.y),
 					(bitangentTerm1.z + bitangentTerm2.z + bitangentTerm3.z)
 				));
-				const float3 tangentTerm1 = CalculateSumTermOfTangent(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1;
-				const float3 tangentTerm2 = CalculateSumTermOfTangent(xy, _QRatio2, _Amplitude2, normalize(float2(_Direction2X, _Direction2Z)), t, _WaveLength2, _Speed2) * _Active2;
-				const float3 tangentTerm3 = CalculateSumTermOfTangent(xy, _QRatio3, _Amplitude3, normalize(float2(_Direction3X, _Direction3Z)), t, _WaveLength3, _Speed3) * _Active3;
+				const float3 tangentTerm1 = CalculateSumTermOfTangent(param1) * _Active1;
+				const float3 tangentTerm2 = CalculateSumTermOfTangent(param2) * _Active2;
+				const float3 tangentTerm3 = CalculateSumTermOfTangent(param3) * _Active3;
 				const float3 tangent = normalize(float3(
 					- (tangentTerm1.x + tangentTerm2.x + tangentTerm3.x),
 					1 - (tangentTerm1.y + tangentTerm2.y + tangentTerm3.y),
@@ -224,10 +206,14 @@ Shader "GerstnerWaves"
 				// Gemsに合わせて記号は水平平面をxyとしている。実際はxz平面なので渡すのはxz。
 				const float2 xy = positionWS.xz;
 				const float t = _Time.y;
+				Param param1, param2, param3;
+				InitParam(xy, _QRatio1, _Amplitude1, float2(_Direction1X, _Direction1Z), t, _WaveLength1, _Speed1, param1);
+				InitParam(xy, _QRatio2, _Amplitude2, float2(_Direction2X, _Direction2Z), t, _WaveLength2, _Speed2, param2);
+				InitParam(xy, _QRatio3, _Amplitude3, float2(_Direction3X, _Direction3Z), t, _WaveLength3, _Speed3, param3);
 
 				Varyings output = (Varyings)0;
-				output.positionWS = P(xy, t).xzy;
-				output.normalWS = N(xy, t).xzy;
+				output.positionWS = P(xy, param1, param2, param3).xzy;
+				output.normalWS = N(param1, param2, param3).xzy;
 				output.positionCS = TransformWorldToHClip(output.positionWS);
 				return output;
 			}
