@@ -8,28 +8,28 @@ Shader "GerstnerWaves"
 		[MaterialToggle] _Active1 ("Active1", Float) = 1
 		_Direction1X ("Direction1X", Range(-1, 1)) = 1
 		_Direction1Z ("Direction1Z", Range(-1, 1)) = 0
-		_Amplitude1 ("Amplitude1", Float) = 1
-		_WaveLength1 ("WaveLength1", Float) = 1
-		_Speed1 ("Speed1", Float) = 1
-		_QRatio1 ("Q Ratio1", Range(0, 1)) = 1
+		_Amplitude1 ("Amplitude1", Float) = 0.1
+		_WaveLength1 ("WaveLength1", Float) = 3
+		_Speed1 ("Speed1", Float) = 0.2
+		_QRatio1 ("Q Ratio1", Range(0, 1)) = 0.25
 		
 		[Header(Wave2)]
 		[MaterialToggle] _Active2 ("Active2", Float) = 1
-		_Direction2X ("Direction2X", Range(-1, 1)) = 1
-		_Direction2Z ("Direction2Z", Range(-1, 1)) = 0
-		_Amplitude2 ("Amplitude2", Float) = 1
-		_WaveLength2 ("WaveLength2", Float) = 1
-		_Speed2 ("Speed2", Float) = 1
-		_QRatio2 ("Q Ratio2", Range(0, 1)) = 1
+		_Direction2X ("Direction2X", Range(-1, 1)) = 0.8
+		_Direction2Z ("Direction2Z", Range(-1, 1)) = 0.3
+		_Amplitude2 ("Amplitude2", Float) = 0.07
+		_WaveLength2 ("WaveLength2", Float) = 1.5
+		_Speed2 ("Speed2", Float) = 0.5
+		_QRatio2 ("Q Ratio2", Range(0, 1)) = 0.34
 		
 		[Header(Wave3)]
 		[MaterialToggle] _Active3 ("Active3", Float) = 1
-		_Direction3X ("Direction3X", Range(-1, 1)) = 1
-		_Direction3Z ("Direction3Z", Range(-1, 1)) = 0
-		_Amplitude3 ("Amplitude3", Float) = 1
-		_WaveLength3 ("WaveLength3", Float) = 1
-		_Speed3 ("Speed3", Float) = 1
-		_QRatio3 ("Q Ratio3", Range(0, 1)) = 1
+		_Direction3X ("Direction3X", Range(-1, 1)) = 0.1
+		_Direction3Z ("Direction3Z", Range(-1, 1)) = 0.08
+		_Amplitude3 ("Amplitude3", Float) = 0.04
+		_WaveLength3 ("WaveLength3", Float) = 0.9
+		_Speed3 ("Speed3", Float) = 0.6
+		_QRatio3 ("Q Ratio3", Range(0, 1)) = 0.5
 	}
 	SubShader
 	{
