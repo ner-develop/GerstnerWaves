@@ -146,6 +146,38 @@ Shader "GerstnerWaves"
 				);
 			}
 
+			float3 CalculateSumTermOfBitangent(const float2 xy, const half QRatio, const half A, const half2 D, const float t, const float L, const float S)
+			{
+				const float w = 2 * PI / L;
+				const float WA = w * A;
+				const float phi = S * w;
+				const float theta = w * dot(D, xy) + phi * t;
+				const float sinTheta = sin(theta);
+				const float cosTheta = cos(theta);
+				const float Q = (1 / (w * A)) * QRatio;
+				return float3(
+					Q * D.x * D.x * WA * sinTheta,
+					Q * D.x * D.y * WA * sinTheta,
+					D.x * WA * cosTheta
+				);
+			}
+
+			float3 CalculateSumTermOfTangent(const float2 xy, const half QRatio, const half A, const half2 D, const float t, const float L, const float S)
+			{
+				const float w = 2 * PI / L;
+				const float WA = w * A;
+				const float phi = S * w;
+				const float theta = w * dot(D, xy) + phi * t;
+				const float sinTheta = sin(theta);
+				const float cosTheta = cos(theta);
+				const float Q = (1 / (w * A)) * QRatio;
+				return float3(
+					Q * D.x * D.y * WA * sinTheta,
+					Q * D.y * D.y * WA * sinTheta,
+					D.y * WA * cosTheta
+				);
+			}
+
 			float3 P(float2 xy, float t)
 			{
 				return float3(xy, 0)
@@ -156,14 +188,33 @@ Shader "GerstnerWaves"
 
 			float3 N(float2 xy, float t)
 			{
-				const float3 normalTerm1 = CalculateSumTermOfNormal(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1;
+				// tangentとbitangentを計算して外積でnormalを計算したほうが綺麗に出るので、直接normalを計算しない
+				/*const float3 normalTerm1 = CalculateSumTermOfNormal(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1;
 				const float3 normalTerm2 = CalculateSumTermOfNormal(xy, _QRatio2, _Amplitude2, normalize(float2(_Direction2X, _Direction2Z)), t, _WaveLength2, _Speed2) * _Active2;
 				const float3 normalTerm3 = CalculateSumTermOfNormal(xy, _QRatio3, _Amplitude3, normalize(float2(_Direction3X, _Direction3Z)), t, _WaveLength3, _Speed3) * _Active3;
 				return normalize(float3(
 					- (normalTerm1.x + normalTerm2.x + normalTerm3.x),
 					- (normalTerm1.y + normalTerm2.y + normalTerm3.y),
 					1 - (normalTerm1.z + normalTerm2.z + normalTerm3.z)
+				));*/
+
+				const float3 bitangentTerm1 = CalculateSumTermOfBitangent(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1;
+				const float3 bitangentTerm2 = CalculateSumTermOfBitangent(xy, _QRatio2, _Amplitude2, normalize(float2(_Direction2X, _Direction2Z)), t, _WaveLength2, _Speed2) * _Active2;
+				const float3 bitangentTerm3 = CalculateSumTermOfBitangent(xy, _QRatio3, _Amplitude3, normalize(float2(_Direction3X, _Direction3Z)), t, _WaveLength3, _Speed3) * _Active3;
+				const float3 bitangent = normalize(float3(
+					1 - (bitangentTerm1.x + bitangentTerm2.x + bitangentTerm3.x),
+					- (bitangentTerm1.y + bitangentTerm2.y + bitangentTerm3.y),
+					(bitangentTerm1.z + bitangentTerm2.z + bitangentTerm3.z)
 				));
+				const float3 tangentTerm1 = CalculateSumTermOfTangent(xy, _QRatio1, _Amplitude1, normalize(float2(_Direction1X, _Direction1Z)), t, _WaveLength1, _Speed1) * _Active1;
+				const float3 tangentTerm2 = CalculateSumTermOfTangent(xy, _QRatio2, _Amplitude2, normalize(float2(_Direction2X, _Direction2Z)), t, _WaveLength2, _Speed2) * _Active2;
+				const float3 tangentTerm3 = CalculateSumTermOfTangent(xy, _QRatio3, _Amplitude3, normalize(float2(_Direction3X, _Direction3Z)), t, _WaveLength3, _Speed3) * _Active3;
+				const float3 tangent = normalize(float3(
+					- (tangentTerm1.x + tangentTerm2.x + tangentTerm3.x),
+					1 - (tangentTerm1.y + tangentTerm2.y + tangentTerm3.y),
+					(tangentTerm1.z + tangentTerm2.z + tangentTerm3.z)
+				));
+				return normalize(cross(bitangent, tangent));
 			}
 
 			Varyings ProcessVertex(Attributes input)
