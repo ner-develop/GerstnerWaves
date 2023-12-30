@@ -36,23 +36,23 @@ Material:
     - _Active2: 1
     - _Active3: 1
     - _Amplitude1: 0.1
-    - _Amplitude2: 0.07
-    - _Amplitude3: 0.06
+    - _Amplitude2: 0.1
+    - _Amplitude3: 0.08
     - _Direction1X: 1
     - _Direction1Z: 0
     - _Direction2X: 0.8
-    - _Direction2Z: 0.3
-    - _Direction3X: 0.1
-    - _Direction3Z: 0.08
-    - _QRatio1: 0.5
-    - _QRatio2: 0.7
-    - _QRatio3: 0.8
+    - _Direction2Z: 0.04
+    - _Direction3X: 0.29
+    - _Direction3Z: 0.2
+    - _QRatio1: 0.46
+    - _QRatio2: 0.04
+    - _QRatio3: 0.13
     - _Speed1: 0.2
     - _Speed2: 0.5
-    - _Speed3: 0.3
+    - _Speed3: 0.6
     - _WaveLength1: 3
-    - _WaveLength2: 1.5
-    - _WaveLength3: 0.9
+    - _WaveLength2: 2
+    - _WaveLength3: 1
     m_Colors:
     - _Albedo: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
