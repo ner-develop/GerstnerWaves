@@ -117,8 +117,10 @@ Shader "GerstnerWaves"
 				float2 D;
 			};
 
-			void InitParam(const float2 xy, const half QRatio, const half A, const float2 D, const float t, const float L, const float S, out Param param)
+			Param InitParam(const float2 xy, const half QRatio, const half A, const float2 D, const float t, const float L, const float S)
 			{
+				Param param = (Param)0;
+
 				const float w = 2 * PI / L;
 				param.Q = (1 / (w * A)) * QRatio;
 				param.A = A;
@@ -129,6 +131,8 @@ Shader "GerstnerWaves"
 				const float theta = w * dot(param.D, xy) + phi * t;
 				param.sinTheta = sin(theta);
 				param.cosTheta = cos(theta);
+
+				return param;
 			}
 
 			/// <summary>
@@ -196,6 +200,7 @@ Shader "GerstnerWaves"
 					1 - (tangentTerm1.y + tangentTerm2.y + tangentTerm3.y),
 					(tangentTerm1.z + tangentTerm2.z + tangentTerm3.z)
 				));
+				// 法線の式だけから計算するより接線と従接線の外積で法線計算した方が綺麗になる模様
 				return normalize(cross(bitangent, tangent));
 			}
 
@@ -206,23 +211,32 @@ Shader "GerstnerWaves"
 				// Gemsに合わせて記号は水平平面をxyとしている。実際はxz平面なので渡すのはxz。
 				const float2 xy = positionWS.xz;
 				const float t = _Time.y;
-				Param param1, param2, param3;
-				InitParam(xy, _QRatio1, _Amplitude1, float2(_Direction1X, _Direction1Z), t, _WaveLength1, _Speed1, param1);
-				InitParam(xy, _QRatio2, _Amplitude2, float2(_Direction2X, _Direction2Z), t, _WaveLength2, _Speed2, param2);
-				InitParam(xy, _QRatio3, _Amplitude3, float2(_Direction3X, _Direction3Z), t, _WaveLength3, _Speed3, param3);
+				const Param param1 = InitParam(xy, _QRatio1, _Amplitude1, float2(_Direction1X, _Direction1Z), t, _WaveLength1, _Speed1);
+				const Param param2 = InitParam(xy, _QRatio2, _Amplitude2, float2(_Direction2X, _Direction2Z), t, _WaveLength2, _Speed2);
+				const Param param3 = InitParam(xy, _QRatio3, _Amplitude3, float2(_Direction3X, _Direction3Z), t, _WaveLength3, _Speed3);
 
 				Varyings output = (Varyings)0;
 				output.positionWS = P(xy, param1, param2, param3).xzy;
-				output.normalWS = N(param1, param2, param3).xzy;
 				output.positionCS = TransformWorldToHClip(output.positionWS);
+				// output.normalWS = N(param1, param2, param3).xzy;
 				return output;
 			}
 
 			half4 ProcessFragment(Varyings input) : SV_Target
 			{
+				// 頂点シェーダーで計算した法線を使う
+				// const half3 surfaceNormal = normalize(input.normalWS);
+
+				// ピクセルごとの座標で計算した法線を使う (頂点シェーダー計算より綺麗だけど重くなる)
+				const float2 xy = input.positionWS.xz;
+				const float t = _Time.y;
+				const Param param1 = InitParam(xy, _QRatio1, _Amplitude1, float2(_Direction1X, _Direction1Z), t, _WaveLength1, _Speed1);
+				const Param param2 = InitParam(xy, _QRatio2, _Amplitude2, float2(_Direction2X, _Direction2Z), t, _WaveLength2, _Speed2);
+				const Param param3 = InitParam(xy, _QRatio3, _Amplitude3, float2(_Direction3X, _Direction3Z), t, _WaveLength3, _Speed3);
+				const half3 surfaceNormal = normalize(N(param1, param2, param3).xzy);
+
 				const float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
 				const Light light = GetMainLight(shadowCoord);
-				const half3 surfaceNormal = normalize(input.normalWS);
 				const float NoL = saturate(dot(surfaceNormal, light.direction));
 				const half3 diffuse = _Albedo.rgb * light.color * NoL;
 				return half4(diffuse, 1);
